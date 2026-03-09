@@ -1,0 +1,58 @@
+C:\xampp\htdocs\zyga-api\database\migrations>dir
+ El volumen de la unidad C no tiene etiqueta.
+ El número de serie del volumen es: 1E99-4FF5
+
+ Directorio de C:\xampp\htdocs\zyga-api\database\migrations
+
+07/03/2026  12:27 p. m.    <DIR>          .
+07/03/2026  12:19 p. m.    <DIR>          ..
+07/03/2026  11:28 a. m.               559 2026_03_07_170000_create_users_table.php
+07/03/2026  11:19 a. m.               671 2026_03_07_171916_create_status_domains_table.php
+07/03/2026  11:19 a. m.               746 2026_03_07_171932_create_role_types_table.php
+07/03/2026  11:21 a. m.             1,202 2026_03_07_172110_create_status_types_table.php
+07/03/2026  11:21 a. m.               732 2026_03_07_172132_create_consent_types_table.php
+07/03/2026  11:21 a. m.             1,080 2026_03_07_172145_create_legal_documents_table.php
+07/03/2026  12:05 p. m.               767 2026_03_07_172259_create_services_table.php
+07/03/2026  11:23 a. m.               724 2026_03_07_172318_create_vehicle_types_table.php
+07/03/2026  11:28 a. m.             1,041 2026_03_07_172410_create_providers_table.php
+07/03/2026  12:06 p. m.               902 2026_03_07_172424_create_provider_services_table.php
+07/03/2026  11:25 a. m.             1,167 2026_03_07_172438_create_provider_schedules_table.php
+07/03/2026  11:34 a. m.             1,110 2026_03_07_172930_create_vehicles_table.php
+07/03/2026  12:06 p. m.             1,702 2026_03_07_172947_create_assistance_requests_table.php
+07/03/2026  12:04 p. m.             1,241 2026_03_07_172959_create_service_requests_table.php
+07/03/2026  11:30 a. m.               921 2026_03_07_173004_create_request_events_table.php
+07/03/2026  11:30 a. m.               826 2026_03_07_173030_create_request_history_table.php
+07/03/2026  11:39 a. m.             1,086 2026_03_07_173934_create_payments_table.php
+07/03/2026  11:39 a. m.               910 2026_03_07_173946_create_payment_transactions_table.php
+07/03/2026  11:40 a. m.               734 2026_03_07_173957_create_payment_method_types_table.php
+07/03/2026  11:46 a. m.               873 2026_03_07_174625_create_user_roles_table.php
+07/03/2026  11:46 a. m.               837 2026_03_07_174640_create_audit_logs_table.php
+07/03/2026  11:47 a. m.               910 2026_03_07_174653_create_notifications_table.php
+07/03/2026  11:47 a. m.               892 2026_03_07_174744_create_vehicle_documents_table.php
+07/03/2026  11:48 a. m.               887 2026_03_07_174757_create_provider_documents_table.php
+07/03/2026  12:07 p. m.               838 2026_03_07_180735_create_service_history_table.php
+07/03/2026  12:07 p. m.               898 2026_03_07_180752_create_vehicles_services_table.php
+07/03/2026  12:08 p. m.               899 2026_03_07_180804_create_service_feedbacks_table.php
+07/03/2026  12:09 p. m.               892 2026_03_07_180916_create_user_addresses_table.php
+07/03/2026  12:09 p. m.               891 2026_03_07_180930_create_transactions_table.php
+07/03/2026  12:09 p. m.               828 2026_03_07_180940_create_transaction_details_table.php
+07/03/2026  12:11 p. m.               775 2026_03_07_181054_create_service_images_table.php
+07/03/2026  12:11 p. m.               860 2026_03_07_181106_create_provider_reviews_table.php
+07/03/2026  12:11 p. m.               922 2026_03_07_181120_create_payment_methods_table.php
+07/03/2026  12:12 p. m.               902 2026_03_07_181205_create_service_requests_feedback_table.php
+07/03/2026  12:12 p. m.               877 2026_03_07_181219_create_transaction_logs_table.php
+07/03/2026  12:12 p. m.               829 2026_03_07_181229_create_user_settings_table.php
+07/03/2026  12:13 p. m.               868 2026_03_07_181347_create_user_activity_logs_table.php
+07/03/2026  12:14 p. m.               864 2026_03_07_181358_create_user_sessions_table.php
+07/03/2026  12:14 p. m.               645 2026_03_07_181412_create_password_resets_table.php
+07/03/2026  12:15 p. m.               910 2026_03_07_181457_create_notifications_history_table.php
+07/03/2026  12:15 p. m.               858 2026_03_07_181508_create_user_activities_table.php
+07/03/2026  12:15 p. m.               794 2026_03_07_181520_create_user_permissions_table.php
+07/03/2026  12:16 p. m.             1,009 2026_03_07_181557_create_user_notifications_table.php
+07/03/2026  12:16 p. m.               614 2026_03_07_181606_create_transaction_types_table.php
+07/03/2026  12:27 p. m.               606 2026_03_07_181614_create_subscription_plans_table.php
+07/03/2026  12:25 p. m.             1,013 2026_03_07_181615_create_user_subscription_plans_table.php
+              46 archivos         41,112 bytes
+               2 dirs  185,339,604,992 bytes libres
+
+C:\xampp\htdocs\zyga-api\database\migrations>
