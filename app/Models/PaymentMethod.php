@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AuditLog extends Model
+class PaymentMethod extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'payment_methods';
 
     protected $fillable = [
         'user_id',
-        'action',
-        'description',
+        'method_name',
+        'method_details',
     ];
 
     protected $casts = [

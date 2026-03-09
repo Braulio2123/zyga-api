@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
@@ -13,19 +14,16 @@ class Vehicle extends Model
     protected $fillable = [
         'user_id',
         'vehicle_type_id',
+        'plate',
         'brand',
         'model',
         'year',
-        'plate',
-        'color',
-        'is_active',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
         'vehicle_type_id' => 'integer',
         'year' => 'integer',
-        'is_active' => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -41,5 +39,20 @@ class Vehicle extends Model
     public function assistanceRequests(): HasMany
     {
         return $this->hasMany(AssistanceRequest::class, 'vehicle_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VehicleDocument::class, 'vehicle_id');
+    }
+
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Service::class,
+            'vehicles_services',
+            'vehicle_id',
+            'service_id'
+        )->withTimestamps();
     }
 }

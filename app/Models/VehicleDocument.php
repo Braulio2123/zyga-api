@@ -5,22 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProviderDocument extends Model
+class VehicleDocument extends Model
 {
-    protected $table = 'provider_documents';
+    protected $table = 'vehicle_documents';
 
     protected $fillable = [
-        'provider_id',
+        'vehicle_id',
         'document_type',
         'document_url',
     ];
 
     protected $casts = [
-        'provider_id' => 'integer',
+        'vehicle_id' => 'integer',
     ];
 
-    public function provider(): BelongsTo
+    public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Provider::class, 'provider_id');
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 }

@@ -11,31 +11,16 @@ class RequestEvent extends Model
 
     protected $fillable = [
         'request_id',
-        'status_id',
-        'actor_user_id',
-        'event_code',
-        'payload',
+        'event_type',
+        'event_data',
     ];
 
     protected $casts = [
         'request_id' => 'integer',
-        'status_id' => 'integer',
-        'actor_user_id' => 'integer',
-        'payload' => 'array',
     ];
 
     public function request(): BelongsTo
     {
         return $this->belongsTo(AssistanceRequest::class, 'request_id');
-    }
-
-    public function status(): BelongsTo
-    {
-        return $this->belongsTo(StatusType::class, 'status_id');
-    }
-
-    public function actor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'actor_user_id');
     }
 }

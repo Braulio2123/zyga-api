@@ -5,21 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProviderLocationHistory extends Model
+class ProviderReview extends Model
 {
-    protected $table = 'provider_location_history';
+    protected $table = 'provider_reviews';
 
     protected $fillable = [
         'provider_id',
-        'location',
-        'accuracy_m',
-        'recorded_at',
+        'rating',
+        'review',
     ];
 
     protected $casts = [
         'provider_id' => 'integer',
-        'accuracy_m' => 'integer',
-        'recorded_at' => 'datetime',
+        'rating' => 'integer',
     ];
 
     public function provider(): BelongsTo

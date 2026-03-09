@@ -5,23 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ClientProfile extends Model
+class UserSetting extends Model
 {
-    protected $table = 'client_profiles';
-
-    protected $primaryKey = 'user_id';
-    public $incrementing = false;
+    protected $table = 'user_settings';
 
     protected $fillable = [
         'user_id',
-        'first_name',
-        'last_name',
-        'marketing_opt_in',
+        'setting_key',
+        'setting_value',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
-        'marketing_opt_in' => 'boolean',
     ];
 
     public function user(): BelongsTo

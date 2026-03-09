@@ -11,16 +11,12 @@ class PaymentTransaction extends Model
 
     protected $fillable = [
         'payment_id',
+        'gateway',
         'gateway_event_id',
-        'event_type',
-        'amount_cents',
-        'raw_response',
     ];
 
     protected $casts = [
         'payment_id' => 'integer',
-        'amount_cents' => 'integer',
-        'raw_response' => 'array',
     ];
 
     public function payment(): BelongsTo

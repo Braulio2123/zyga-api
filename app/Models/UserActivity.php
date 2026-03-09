@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AuditLog extends Model
+class UserActivity extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'user_activities';
 
     protected $fillable = [
         'user_id',
-        'action',
+        'activity_type',
         'description',
     ];
 

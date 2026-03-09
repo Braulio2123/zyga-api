@@ -35,33 +35,8 @@ class StatusType extends Model
         return $this->belongsTo(StatusDomain::class, 'domain_id');
     }
 
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class, 'status_id');
-    }
-
     public function providers(): HasMany
     {
         return $this->hasMany(Provider::class, 'status_id');
-    }
-
-    public function assistanceRequests(): HasMany
-    {
-        return $this->hasMany(AssistanceRequest::class, 'current_status_id');
-    }
-
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class, 'status_id');
-    }
-
-    public function notifications(): HasMany
-    {
-        return $this->hasMany(Notification::class, 'status_id');
-    }
-
-    public function providerDocuments(): HasMany
-    {
-        return $this->hasMany(ProviderDocument::class, 'status_id');
     }
 }

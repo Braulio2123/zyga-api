@@ -19,8 +19,28 @@ class Service extends Catalog
         )->withTimestamps();
     }
 
+    public function vehicles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Vehicle::class,
+            'vehicles_services',
+            'service_id',
+            'vehicle_id'
+        )->withTimestamps();
+    }
+
     public function assistanceRequests(): HasMany
     {
         return $this->hasMany(AssistanceRequest::class, 'service_id');
+    }
+
+    public function serviceRequests(): HasMany
+    {
+        return $this->hasMany(ServiceRequest::class, 'service_id');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ServiceImage::class, 'service_id');
     }
 }

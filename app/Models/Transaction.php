@@ -4,23 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class AuditLog extends Model
+class Transaction extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'transactions';
 
     protected $fillable = [
         'user_id',
-        'action',
-        'description',
+        'amount',
+        'type',
+        'status',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
+        'amount' => 'decimal:2',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 }

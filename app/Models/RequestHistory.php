@@ -11,14 +11,11 @@ class RequestHistory extends Model
 
     protected $fillable = [
         'request_id',
-        'version_no',
-        'snapshot',
+        'status',
     ];
 
     protected $casts = [
         'request_id' => 'integer',
-        'version_no' => 'integer',
-        'snapshot' => 'array',
     ];
 
     public function request(): BelongsTo

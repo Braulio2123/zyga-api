@@ -5,18 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AuditLog extends Model
+class UserSession extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'user_sessions';
 
     protected $fillable = [
         'user_id',
-        'action',
-        'description',
+        'session_token',
+        'last_activity',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
+        'last_activity' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -5,14 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AuditLog extends Model
+class UserAddress extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'user_addresses';
 
     protected $fillable = [
         'user_id',
-        'action',
-        'description',
+        'address',
+        'city',
+        'state',
+        'country',
+        'zip_code',
     ];
 
     protected $casts = [

@@ -3,10 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class RoleType extends Model
+class RoleType extends Catalog
 {
     use HasFactory;
 
@@ -19,10 +18,6 @@ class RoleType extends Model
         'is_active',
     ];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-    ];
-
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -30,9 +25,6 @@ class RoleType extends Model
             'user_roles',
             'role_id',
             'user_id'
-        )->withPivot([
-            'granted_by',
-            'granted_at',
-        ]);
+        )->withTimestamps();
     }
 }

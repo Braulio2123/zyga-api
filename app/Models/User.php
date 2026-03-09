@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -17,25 +15,17 @@ class User extends Authenticatable
     protected $table = 'users';
 
     protected $fillable = [
-        'public_id',
         'email',
-        'phone',
-        'password_hash',
-        'status_id',
+        'password',
     ];
 
     protected $hidden = [
-        'password_hash',
+        'password',
     ];
 
     protected $casts = [
-        'status_id' => 'integer',
+        'password' => 'hashed',
     ];
-
-    public function status(): BelongsTo
-    {
-        return $this->belongsTo(StatusType::class, 'status_id');
-    }
 
     public function roles(): BelongsToMany
     {
@@ -44,25 +34,12 @@ class User extends Authenticatable
             'user_roles',
             'user_id',
             'role_id'
-        )->withPivot([
-            'granted_by',
-            'granted_at',
-        ]);
+        )->withTimestamps();
     }
 
-    public function clientProfile(): HasOne
+    public function providers(): HasMany
     {
-        return $this->hasOne(ClientProfile::class, 'user_id');
-    }
-
-    public function adminProfile(): HasOne
-    {
-        return $this->hasOne(AdminProfile::class, 'user_id');
-    }
-
-    public function provider(): HasOne
-    {
-        return $this->hasOne(Provider::class, 'user_id');
+        return $this->hasMany(Provider::class, 'user_id');
     }
 
     public function vehicles(): HasMany
@@ -70,14 +47,9 @@ class User extends Authenticatable
         return $this->hasMany(Vehicle::class, 'user_id');
     }
 
-    public function userConsents(): HasMany
+    public function assistanceRequests(): HasMany
     {
-        return $this->hasMany(UserConsent::class, 'user_id');
-    }
-
-    public function deviceTokens(): HasMany
-    {
-        return $this->hasMany(DeviceToken::class, 'user_id');
+        return $this->hasMany(AssistanceRequest::class, 'user_id');
     }
 
     public function notifications(): HasMany
@@ -85,13 +57,58 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class, 'user_id');
     }
 
-    public function messagesSent(): HasMany
+    public function paymentMethods(): HasMany
     {
-        return $this->hasMany(Message::class, 'sender_user_id');
+        return $this->hasMany(PaymentMethod::class, 'user_id');
     }
 
-    public function attachments(): HasMany
+    public function transactions(): HasMany
     {
-        return $this->hasMany(Attachment::class, 'user_id');
+        return $this->hasMany(Transaction::class, 'user_id');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class, 'user_id');
+    }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(UserSetting::class, 'user_id');
+    }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(UserActivityLog::class, 'user_id');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(UserActivity::class, 'user_id');
+    }
+
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(UserPermission::class, 'user_id');
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(UserSession::class, 'user_id');
+    }
+
+    public function userNotifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class, 'user_id');
+    }
+
+    public function subscriptionPlans(): HasMany
+    {
+        return $this->hasMany(UserSubscriptionPlan::class, 'user_id');
     }
 }

@@ -5,21 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class DeviceToken extends Model
+class UserNotification extends Model
 {
-    protected $table = 'device_tokens';
+    protected $table = 'user_notifications';
 
     protected $fillable = [
         'user_id',
-        'platform_type_id',
-        'token',
-        'last_seen_at',
+        'notification_id',
+        'is_read',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
-        'platform_type_id' => 'integer',
-        'last_seen_at' => 'datetime',
+        'notification_id' => 'integer',
+        'is_read' => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -27,8 +26,8 @@ class DeviceToken extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function platformType(): BelongsTo
+    public function notification(): BelongsTo
     {
-        return $this->belongsTo(DevicePlatformType::class, 'platform_type_id');
+        return $this->belongsTo(Notification::class, 'notification_id');
     }
 }
