@@ -17,20 +17,16 @@ class User extends Authenticatable
     protected $table = 'users';
 
     protected $fillable = [
-        'public_id',
         'email',
-        'phone',
-        'password_hash',
-        'status_id',
+        'password',
     ];
 
     protected $hidden = [
-        'password_hash',
+        'password',
+        'remember_token',
     ];
 
-    protected $casts = [
-        'status_id' => 'integer',
-    ];
+    protected $casts = [];
 
     public function status(): BelongsTo
     {
