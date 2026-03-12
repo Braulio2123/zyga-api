@@ -2,12 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Service extends Catalog
+class Service extends Model
 {
     protected $table = 'services';
+
+    protected $fillable = [
+        'code',
+        'name',
+        'description',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function providers(): BelongsToMany
     {
@@ -32,15 +44,5 @@ class Service extends Catalog
     public function assistanceRequests(): HasMany
     {
         return $this->hasMany(AssistanceRequest::class, 'service_id');
-    }
-
-    public function serviceRequests(): HasMany
-    {
-        return $this->hasMany(ServiceRequest::class, 'service_id');
-    }
-
-    public function images(): HasMany
-    {
-        return $this->hasMany(ServiceImage::class, 'service_id');
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
-class PaymentMethodType extends Catalog
+use Illuminate\Database\Eloquent\Model;
+
+class PaymentMethodType extends Model
 {
     protected $table = 'payment_method_types';
 
@@ -10,5 +12,9 @@ class PaymentMethodType extends Catalog
         'code',
         'name',
         'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 }

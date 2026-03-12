@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,6 +22,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
     protected $casts = [
@@ -37,9 +39,9 @@ class User extends Authenticatable
         )->withTimestamps();
     }
 
-    public function providers(): HasMany
+    public function provider(): HasOne
     {
-        return $this->hasMany(Provider::class, 'user_id');
+        return $this->hasOne(Provider::class, 'user_id');
     }
 
     public function vehicles(): HasMany
@@ -57,58 +59,28 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class, 'user_id');
     }
 
-    public function paymentMethods(): HasMany
-    {
-        return $this->hasMany(PaymentMethod::class, 'user_id');
-    }
-
-    public function transactions(): HasMany
-    {
-        return $this->hasMany(Transaction::class, 'user_id');
-    }
-
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'user_id');
     }
 
-    public function addresses(): HasMany
+    public function hasRole(string $roleCode): bool
     {
-        return $this->hasMany(UserAddress::class, 'user_id');
+        return $this->roles->contains('code', $roleCode);
     }
 
-    public function settings(): HasMany
+    public function isAdmin(): bool
     {
-        return $this->hasMany(UserSetting::class, 'user_id');
+        return $this->hasRole('admin');
     }
 
-    public function activityLogs(): HasMany
+    public function isClient(): bool
     {
-        return $this->hasMany(UserActivityLog::class, 'user_id');
+        return $this->hasRole('client');
     }
 
-    public function activities(): HasMany
+    public function isProvider(): bool
     {
-        return $this->hasMany(UserActivity::class, 'user_id');
-    }
-
-    public function permissions(): HasMany
-    {
-        return $this->hasMany(UserPermission::class, 'user_id');
-    }
-
-    public function sessions(): HasMany
-    {
-        return $this->hasMany(UserSession::class, 'user_id');
-    }
-
-    public function userNotifications(): HasMany
-    {
-        return $this->hasMany(UserNotification::class, 'user_id');
-    }
-
-    public function subscriptionPlans(): HasMany
-    {
-        return $this->hasMany(UserSubscriptionPlan::class, 'user_id');
+        return $this->hasRole('provider');
     }
 }

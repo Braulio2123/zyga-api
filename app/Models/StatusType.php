@@ -2,15 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StatusType extends Model
 {
-    use HasFactory;
-
     protected $table = 'status_types';
 
     protected $fillable = [
@@ -18,15 +15,15 @@ class StatusType extends Model
         'code',
         'name',
         'description',
-        'is_terminal',
         'sort_order',
+        'is_terminal',
         'is_active',
     ];
 
     protected $casts = [
         'domain_id' => 'integer',
-        'is_terminal' => 'boolean',
         'sort_order' => 'integer',
+        'is_terminal' => 'boolean',
         'is_active' => 'boolean',
     ];
 

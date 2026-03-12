@@ -31,4 +31,9 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(TransactionLog::class, 'transaction_id');
+    }
 }

@@ -12,7 +12,6 @@ class ServiceImage extends Model
     protected $fillable = [
         'service_id',
         'image_url',
-        'description',
     ];
 
     protected $casts = [

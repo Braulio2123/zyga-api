@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ConsentType extends Catalog
+class ConsentType extends Model
 {
     protected $table = 'consent_types';
 
@@ -12,6 +13,10 @@ class ConsentType extends Catalog
         'code',
         'name',
         'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function legalDocuments(): HasMany

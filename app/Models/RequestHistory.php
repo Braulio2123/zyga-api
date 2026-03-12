@@ -18,7 +18,7 @@ class RequestHistory extends Model
         'request_id' => 'integer',
     ];
 
-    public function request(): BelongsTo
+    public function assistanceRequest(): BelongsTo
     {
         return $this->belongsTo(AssistanceRequest::class, 'request_id');
     }

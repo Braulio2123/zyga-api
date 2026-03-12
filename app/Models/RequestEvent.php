@@ -17,9 +17,10 @@ class RequestEvent extends Model
 
     protected $casts = [
         'request_id' => 'integer',
+        'event_data' => 'array',
     ];
 
-    public function request(): BelongsTo
+    public function assistanceRequest(): BelongsTo
     {
         return $this->belongsTo(AssistanceRequest::class, 'request_id');
     }

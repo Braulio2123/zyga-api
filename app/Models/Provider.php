@@ -35,6 +35,16 @@ class Provider extends Model
         return $this->belongsTo(StatusType::class, 'status_id');
     }
 
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Service::class,
+            'provider_services',
+            'provider_id',
+            'service_id'
+        )->withTimestamps();
+    }
+
     public function schedules(): HasMany
     {
         return $this->hasMany(ProviderSchedule::class, 'provider_id');
@@ -48,25 +58,5 @@ class Provider extends Model
     public function assistanceRequests(): HasMany
     {
         return $this->hasMany(AssistanceRequest::class, 'provider_id');
-    }
-
-    public function serviceRequests(): HasMany
-    {
-        return $this->hasMany(ServiceRequest::class, 'provider_id');
-    }
-
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(ProviderReview::class, 'provider_id');
-    }
-
-    public function services(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Service::class,
-            'provider_services',
-            'provider_id',
-            'service_id'
-        )->withTimestamps();
     }
 }

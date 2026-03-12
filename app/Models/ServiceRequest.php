@@ -38,14 +38,14 @@ class ServiceRequest extends Model
         return $this->belongsTo(Provider::class, 'provider_id');
     }
 
-    public function feedbacks(): HasMany
-    {
-        return $this->hasMany(ServiceFeedback::class, 'service_request_id');
-    }
-
     public function history(): HasMany
     {
         return $this->hasMany(ServiceHistory::class, 'service_request_id');
+    }
+
+    public function feedbacks(): HasMany
+    {
+        return $this->hasMany(ServiceFeedback::class, 'service_request_id');
     }
 
     public function requestFeedbacks(): HasMany

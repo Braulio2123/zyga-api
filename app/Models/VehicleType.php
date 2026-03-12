@@ -2,11 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class VehicleType extends Catalog
+class VehicleType extends Model
 {
     protected $table = 'vehicle_types';
+
+    protected $fillable = [
+        'code',
+        'name',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function vehicles(): HasMany
     {

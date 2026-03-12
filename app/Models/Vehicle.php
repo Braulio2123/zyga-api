@@ -41,11 +41,6 @@ class Vehicle extends Model
         return $this->hasMany(AssistanceRequest::class, 'vehicle_id');
     }
 
-    public function documents(): HasMany
-    {
-        return $this->hasMany(VehicleDocument::class, 'vehicle_id');
-    }
-
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(
