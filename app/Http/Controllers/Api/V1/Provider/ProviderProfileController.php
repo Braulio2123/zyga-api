@@ -1,15 +1,15 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers\Api\V1\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Models\Provider;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ProviderProfileController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $providers = Provider::query()
             ->with(['services', 'schedules'])
@@ -22,7 +22,7 @@ class ProviderProfileController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $existingProvider = Provider::query()
             ->where('user_id', $request->user()->id)
@@ -55,11 +55,12 @@ class ProviderProfileController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, string $id)
+    public function show(Request $request, string $id): JsonResponse
     {
         $provider = Provider::query()
             ->with(['services', 'schedules'])
-            ->find($id);
+            ->where('id', $id)
+            ->first();
 
         if (!$provider) {
             return response()->json([
@@ -73,7 +74,7 @@ class ProviderProfileController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $provider = Provider::query()
             ->where('id', $id)
@@ -117,7 +118,7 @@ class ProviderProfileController extends Controller
         ], 200);
     }
 
-    public function destroy(Request $request, string $id)
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $provider = Provider::query()
             ->where('id', $id)
@@ -137,7 +138,7 @@ class ProviderProfileController extends Controller
         ], 200);
     }
 
-    public function updateServices(Request $request, string $id)
+    public function updateServices(Request $request, string $id): JsonResponse
     {
         $provider = Provider::query()
             ->where('id', $id)
@@ -163,7 +164,7 @@ class ProviderProfileController extends Controller
         ], 200);
     }
 
-    public function updateSchedule(Request $request, string $id)
+    public function updateSchedule(Request $request, string $id): JsonResponse
     {
         $provider = Provider::query()
             ->where('id', $id)

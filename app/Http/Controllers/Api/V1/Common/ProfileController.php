@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Common;
 
 use App\Http\Controllers\Controller;
-use App\Models\UserAddress;
-use App\Models\UserSetting;
-use App\Models\UserSubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
@@ -16,14 +14,8 @@ class ProfileController extends Controller
     {
         $user = $request->user()->load(['roles', 'provider']);
 
-        $addresses = UserAddress::where('user_id', $user->id)->get();
-        $settings = UserSetting::where('user_id', $user->id)->get();
-        $subscription = UserSubscriptionPlan::with('subscriptionPlan')
-            ->where('user_id', $user->id)
-            ->latest('id')
-            ->first();
-
         return response()->json([
+            'message' => 'Perfil obtenido correctamente.',
             'data' => [
                 'user' => $user,
                 'roles' => $user->roles->map(fn ($role) => [
@@ -32,11 +24,8 @@ class ProfileController extends Controller
                     'name' => $role->name,
                 ])->values(),
                 'provider_profile' => $user->provider,
-                'addresses' => $addresses,
-                'settings' => $settings,
-                'subscription' => $subscription,
             ],
-        ]);
+        ], 200);
     }
 
     public function update(Request $request): JsonResponse
@@ -46,12 +35,11 @@ class ProfileController extends Controller
         $data = $request->validate([
             'email' => [
                 'sometimes',
-                'required',
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'password' => ['sometimes', 'required', 'string', 'min:8', 'max:255', 'confirmed'],
+            'password' => ['sometimes', 'string', 'min:8', 'max:255'],
         ]);
 
         if (array_key_exists('email', $data)) {
@@ -59,11 +47,10 @@ class ProfileController extends Controller
         }
 
         if (array_key_exists('password', $data)) {
-            $user->password = $data['password'];
+            $user->password = Hash::make($data['password']);
         }
 
         $user->save();
-
         $user->load(['roles', 'provider']);
 
         return response()->json([
@@ -77,6 +64,6 @@ class ProfileController extends Controller
                 ])->values(),
                 'provider_profile' => $user->provider,
             ],
-        ]);
+        ], 200);
     }
 }

@@ -1,28 +1,30 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers\Api\V1\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ClientVehicleController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $vehicles = Vehicle::query()
+            ->with('vehicleType')
             ->where('user_id', $request->user()->id)
             ->orderByDesc('id')
             ->get();
 
         return response()->json([
-            'message' => 'VehÃ­culos obtenidos correctamente.',
+            'message' => 'Vehículos obtenidos correctamente.',
             'data' => $vehicles,
         ], 200);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'vehicle_type_id' => ['required', 'integer', 'exists:vehicle_types,id'],
@@ -39,34 +41,35 @@ class ClientVehicleController extends Controller
             'brand' => trim($data['brand']),
             'model' => trim($data['model']),
             'year' => $data['year'] ?? null,
-        ]);
+        ])->load('vehicleType');
 
         return response()->json([
-            'message' => 'VehÃ­culo registrado correctamente.',
+            'message' => 'Vehículo registrado correctamente.',
             'data' => $vehicle,
         ], 201);
     }
 
-    public function show(Request $request, string $id)
+    public function show(Request $request, string $id): JsonResponse
     {
         $vehicle = Vehicle::query()
+            ->with('vehicleType')
             ->where('id', $id)
             ->where('user_id', $request->user()->id)
             ->first();
 
         if (!$vehicle) {
             return response()->json([
-                'message' => 'VehÃ­culo no encontrado.',
+                'message' => 'Vehículo no encontrado.',
             ], 404);
         }
 
         return response()->json([
-            'message' => 'VehÃ­culo obtenido correctamente.',
+            'message' => 'Vehículo obtenido correctamente.',
             'data' => $vehicle,
         ], 200);
     }
 
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
         $vehicle = Vehicle::query()
             ->where('id', $id)
@@ -75,7 +78,7 @@ class ClientVehicleController extends Controller
 
         if (!$vehicle) {
             return response()->json([
-                'message' => 'VehÃ­culo no encontrado.',
+                'message' => 'Vehículo no encontrado.',
             ], 404);
         }
 
@@ -113,14 +116,15 @@ class ClientVehicleController extends Controller
         }
 
         $vehicle->save();
+        $vehicle->load('vehicleType');
 
         return response()->json([
-            'message' => 'VehÃ­culo actualizado correctamente.',
+            'message' => 'Vehículo actualizado correctamente.',
             'data' => $vehicle,
         ], 200);
     }
 
-    public function destroy(Request $request, string $id)
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $vehicle = Vehicle::query()
             ->where('id', $id)
@@ -129,14 +133,14 @@ class ClientVehicleController extends Controller
 
         if (!$vehicle) {
             return response()->json([
-                'message' => 'VehÃ­culo no encontrado.',
+                'message' => 'Vehículo no encontrado.',
             ], 404);
         }
 
         $vehicle->delete();
 
         return response()->json([
-            'message' => 'VehÃ­culo eliminado correctamente.',
+            'message' => 'Vehículo eliminado correctamente.',
         ], 200);
     }
 }

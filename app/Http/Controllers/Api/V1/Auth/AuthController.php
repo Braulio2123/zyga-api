@@ -18,7 +18,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'max:255'],
-            'role' => ['nullable', 'string', 'in:client,provider,admin'],
+            'role' => ['nullable', 'string', 'in:client,provider'],
         ]);
 
         $user = User::create([
@@ -121,24 +121,23 @@ class AuthController extends Controller
     }
 
     public function logout(Request $request): JsonResponse
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $currentToken = $user->currentAccessToken();
+    $currentToken = $user->currentAccessToken();
 
-        if ($currentToken) {
-            UserSession::where('user_id', $user->id)
-                ->where('session_token', hash('sha256', $currentToken->plainTextToken ?? ''))
-                ->delete();
-
-            $currentToken->delete();
-        }
-
-        return response()->json([
-            'message' => 'Sesión cerrada correctamente.',
-        ]);
+    if ($currentToken) {
+        $currentToken->delete();
     }
 
+    UserSession::where('user_id', $user->id)
+        ->latest('id')
+        ->first()?->delete();
+
+    return response()->json([
+        'message' => 'Sesión cerrada correctamente.',
+    ]);
+}
     public function logoutAll(Request $request): JsonResponse
     {
         $user = $request->user();
