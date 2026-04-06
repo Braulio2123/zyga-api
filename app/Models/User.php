@@ -64,6 +64,11 @@ class User extends Authenticatable
         return $this->hasMany(AuditLog::class, 'user_id');
     }
 
+    public function subscriptionPlans(): HasMany
+    {
+        return $this->hasMany(UserSubscriptionPlan::class, 'user_id');
+    }
+
     public function hasRole(string $roleCode): bool
     {
         return $this->roles->contains('code', $roleCode);

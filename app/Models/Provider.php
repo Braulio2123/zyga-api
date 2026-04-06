@@ -59,4 +59,9 @@ class Provider extends Model
     {
         return $this->hasMany(AssistanceRequest::class, 'provider_id');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProviderReview::class, 'provider_id');
+    }
 }

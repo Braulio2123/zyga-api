@@ -50,7 +50,7 @@ class ClientServiceRequestController extends Controller
             'assistance_request_id' => $data['assistance_request_id'],
             'service_id' => $data['service_id'],
             'provider_id' => $data['provider_id'] ?? null,
-            'status' => 'created',
+            'status' => 'pending',
         ]);
 
         RequestEvent::create([
@@ -110,6 +110,15 @@ class ClientServiceRequestController extends Controller
             ], 404);
         }
 
+        if (!in_array($serviceRequest->status, ['pending', 'quoted'], true)) {
+            return response()->json([
+                'message' => 'La solicitud no puede cotizarse en su estado actual.',
+                'data' => [
+                    'current_status' => $serviceRequest->status,
+                ],
+            ], 422);
+        }
+
         $data = $request->validate([
             'quoted_amount' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:255'],
@@ -156,7 +165,7 @@ class ClientServiceRequestController extends Controller
             ], 404);
         }
 
-        if (!in_array($serviceRequest->status, ['created', 'quoted'], true)) {
+        if (!in_array($serviceRequest->status, ['pending', 'quoted'], true)) {
             return response()->json([
                 'message' => 'La solicitud no puede confirmarse en su estado actual.',
                 'data' => [

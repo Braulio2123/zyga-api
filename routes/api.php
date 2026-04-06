@@ -1,138 +1,315 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminAssistanceController;
+use App\Http\Controllers\Api\V1\Admin\AdminAuditController;
+use App\Http\Controllers\Api\V1\Admin\AdminFinanceController;
+use App\Http\Controllers\Api\V1\Admin\AdminLegalController;
+use App\Http\Controllers\Api\V1\Admin\AdminPaymentMethodTypeController;
+use App\Http\Controllers\Api\V1\Admin\AdminProviderController;
+use App\Http\Controllers\Api\V1\Admin\AdminServiceCatalogController;
+use App\Http\Controllers\Api\V1\Admin\AdminStatusController;
+use App\Http\Controllers\Api\V1\Admin\AdminUserController;
+use App\Http\Controllers\Api\V1\Admin\AdminVehicleTypeController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Client\ClientAddressController;
+use App\Http\Controllers\Api\V1\Client\ClientAssistanceRequestController;
+use App\Http\Controllers\Api\V1\Client\ClientPaymentController;
+use App\Http\Controllers\Api\V1\Client\ClientPaymentMethodController;
+use App\Http\Controllers\Api\V1\Client\ClientServiceRequestController;
+use App\Http\Controllers\Api\V1\Client\ClientSubscriptionController;
+use App\Http\Controllers\Api\V1\Client\ClientVehicleController;
 use App\Http\Controllers\Api\V1\Common\NotificationController;
 use App\Http\Controllers\Api\V1\Common\ProfileController;
-use App\Http\Controllers\Api\V1\Client\ClientVehicleController;
-use App\Http\Controllers\Api\V1\Client\ClientAssistanceRequestController;
 use App\Http\Controllers\Api\V1\Common\ServiceController;
-use App\Http\Controllers\Api\V1\Common\ServiceAreaController;
-use App\Http\Controllers\Api\V1\Client\ClientAddressController;
-use App\Http\Controllers\Api\V1\Client\ClientPaymentMethodController;
-use App\Http\Controllers\Api\V1\Client\ClientPaymentController;
-use App\Http\Controllers\Api\V1\Client\ClientServiceRequestController;
+use App\Http\Controllers\Api\V1\Common\SubscriptionPlanController;
+use App\Http\Controllers\Api\V1\Common\PaymentMethodTypeController;
+use App\Http\Controllers\Api\V1\Provider\ProviderAssistanceController;
+use App\Http\Controllers\Api\V1\Provider\ProviderDocumentController;
 use App\Http\Controllers\Api\V1\Provider\ProviderProfileController;
+use App\Http\Controllers\Api\V1\Provider\ProviderReviewController;
+use App\Http\Controllers\Api\V1\Provider\ProviderScheduleController;
+use App\Http\Controllers\Api\V1\Provider\ProviderServiceController;
 use Illuminate\Support\Facades\Route;
 
-
 Route::prefix('v1')->group(function () {
-
     /*
     |--------------------------------------------------------------------------
-    | RUTAS PÚBLICAS
+    | Public routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('auth')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
+    Route::prefix('auth')->controller(AuthController::class)->group(function () {
+        Route::post('/register', 'register');
+        Route::post('/login', 'login');
     });
 
     Route::get('/services', [ServiceController::class, 'index']);
-    //Route::get('/service-areas', [ServiceAreaController::class, 'index']);
+
+    Route::prefix('subscription-plans')->controller(SubscriptionPlanController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{id}', 'show');
+    });
+
+    Route::prefix('payment-method-types')->controller(PaymentMethodTypeController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{id}', 'show');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | RUTAS AUTENTICADAS
+    | Protected routes
     |--------------------------------------------------------------------------
     */
     Route::middleware('auth:sanctum')->group(function () {
-
         /*
         |--------------------------------------------------------------------------
-        | AUTH / PERFIL
+        | Auth
         |--------------------------------------------------------------------------
         */
-        Route::prefix('auth')->group(function () {
-            Route::get('/me', [AuthController::class, 'me']);
-            Route::post('/logout', [AuthController::class, 'logout']);
-            Route::post('/logout-all', [AuthController::class, 'logoutAll']);
-        });
-
-        Route::prefix('me')->group(function () {
-            Route::get('/', [ProfileController::class, 'show']);
-            Route::put('/', [ProfileController::class, 'update']);
-            Route::patch('/', [ProfileController::class, 'update']);
+        Route::prefix('auth')->controller(AuthController::class)->group(function () {
+            Route::get('/me', 'me');
+            Route::post('/logout', 'logout');
+            Route::post('/logout-all', 'logoutAll');
         });
 
         /*
         |--------------------------------------------------------------------------
-        | NOTIFICACIONES
+        | Profile
         |--------------------------------------------------------------------------
         */
-        Route::prefix('notifications')->group(function () {
-            Route::get('/', [NotificationController::class, 'index']);
-            Route::get('/{id}', [NotificationController::class, 'show']);
-            Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
-            Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::prefix('me')->controller(ProfileController::class)->group(function () {
+            Route::get('/', 'show');
+            Route::put('/', 'update');
+            Route::patch('/', 'update');
         });
 
         /*
         |--------------------------------------------------------------------------
-        | CLIENTE
+        | Notifications
         |--------------------------------------------------------------------------
         */
-                Route::prefix('client')->group(function () {
-
-            // Vehículos
-            Route::get('/vehicles', [ClientVehicleController::class, 'index']);
-            Route::post('/vehicles', [ClientVehicleController::class, 'store']);
-            Route::get('/vehicles/{id}', [ClientVehicleController::class, 'show']);
-            Route::put('/vehicles/{id}', [ClientVehicleController::class, 'update']);
-            Route::patch('/vehicles/{id}', [ClientVehicleController::class, 'update']);
-            Route::delete('/vehicles/{id}', [ClientVehicleController::class, 'destroy']);
-
-            // Direcciones
-            Route::get('/addresses', [ClientAddressController::class, 'index']);
-            Route::post('/addresses', [ClientAddressController::class, 'store']);
-            Route::get('/addresses/{id}', [ClientAddressController::class, 'show']);
-            Route::put('/addresses/{id}', [ClientAddressController::class, 'update']);
-            Route::patch('/addresses/{id}', [ClientAddressController::class, 'update']);
-            Route::delete('/addresses/{id}', [ClientAddressController::class, 'destroy']);
-
-            // Métodos de pago
-            Route::get('/payment-methods', [ClientPaymentMethodController::class, 'index']);
-            Route::post('/payment-methods', [ClientPaymentMethodController::class, 'store']);
-            Route::get('/payment-methods/{id}', [ClientPaymentMethodController::class, 'show']);
-            Route::put('/payment-methods/{id}', [ClientPaymentMethodController::class, 'update']);
-            Route::patch('/payment-methods/{id}', [ClientPaymentMethodController::class, 'update']);
-            Route::delete('/payment-methods/{id}', [ClientPaymentMethodController::class, 'destroy']);
-
-            // Solicitudes de asistencia
-            Route::get('/assistance-requests', [ClientAssistanceRequestController::class, 'index']);
-            Route::post('/assistance-requests', [ClientAssistanceRequestController::class, 'store']);
-            Route::get('/assistance-requests/{id}', [ClientAssistanceRequestController::class, 'show']);
-            Route::patch('/assistance-requests/{id}/cancel', [ClientAssistanceRequestController::class, 'cancel']);
-            Route::get('/assistance-requests/{id}/status', [ClientAssistanceRequestController::class, 'status']);
-            Route::get('/assistance-requests/{id}/timeline', [ClientAssistanceRequestController::class, 'timeline']);
-
-                        // Pagos del cliente
-            Route::get('/payments', [ClientPaymentController::class, 'index']);
-            Route::post('/payments', [ClientPaymentController::class, 'store']);
-            Route::get('/payments/{id}', [ClientPaymentController::class, 'show']);
-            Route::get('/payments/{id}/receipt', [ClientPaymentController::class, 'receipt']);
-
-                        // Solicitudes de servicio
-            Route::get('/service-requests', [ClientServiceRequestController::class, 'index']);
-            Route::post('/service-requests', [ClientServiceRequestController::class, 'store']);
-            Route::get('/service-requests/{id}', [ClientServiceRequestController::class, 'show']);
-            Route::patch('/service-requests/{id}/quote', [ClientServiceRequestController::class, 'quote']);
-            Route::patch('/service-requests/{id}/confirm', [ClientServiceRequestController::class, 'confirm']);
+        Route::prefix('notifications')->controller(NotificationController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            Route::patch('/{id}/read', 'markAsRead');
+            Route::patch('/read-all', 'markAllAsRead');
         });
 
-        Route::prefix('provider')->group(function () {
+        /*
+        |--------------------------------------------------------------------------
+        | Client routes
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('client')->middleware('role:client')->group(function () {
+            Route::prefix('vehicles')->controller(ClientVehicleController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
 
-                    // Perfil / gestión básica del proveedor
-            Route::get('/profiles', [ProviderProfileController::class, 'index']);
-            Route::post('/profile', [ProviderProfileController::class, 'store']);
-            Route::get('/profiles/{id}', [ProviderProfileController::class, 'show']);
-            Route::put('/profiles/{id}', [ProviderProfileController::class, 'update']);
-            Route::patch('/profiles/{id}', [ProviderProfileController::class, 'update']);
-            Route::delete('/profiles/{id}', [ProviderProfileController::class, 'destroy']);
+            Route::prefix('addresses')->controller(ClientAddressController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
 
-            // Acciones auxiliares del proveedor
-            Route::patch('/profiles/{id}/services', [ProviderProfileController::class, 'updateServices']);
-            Route::patch('/profiles/{id}/schedule', [ProviderProfileController::class, 'updateSchedule']);
+            Route::prefix('payment-methods')->controller(ClientPaymentMethodController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
 
+            Route::prefix('assistance-requests')->controller(ClientAssistanceRequestController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}/cancel', 'cancel');
+                Route::get('/{id}/status', 'status');
+                Route::get('/{id}/timeline', 'timeline');
+            });
+
+            Route::prefix('payments')->controller(ClientPaymentController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::get('/{id}/receipt', 'receipt');
+            });
+
+            Route::prefix('service-requests')->controller(ClientServiceRequestController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}/quote', 'quote');
+                Route::patch('/{id}/confirm', 'confirm');
+            });
+
+            Route::prefix('subscriptions')->controller(ClientSubscriptionController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}/cancel', 'cancel');
+            });
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Provider routes
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('provider')->middleware('role:provider')->group(function () {
+            Route::prefix('profile')->controller(ProviderProfileController::class)->group(function () {
+                Route::post('/', 'store');
+                Route::get('/', 'show');
+                Route::put('/', 'update');
+                Route::patch('/', 'update');
+                Route::delete('/', 'destroy');
+            });
+
+            Route::prefix('services')->controller(ProviderServiceController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::put('/', 'update');
+                Route::patch('/', 'update');
+            });
+
+            Route::prefix('schedules')->controller(ProviderScheduleController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('documents')->controller(ProviderDocumentController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('assistance-requests')->controller(ProviderAssistanceController::class)->group(function () {
+                Route::get('/available', 'available');
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}/accept', 'accept');
+                Route::patch('/{id}/status', 'updateStatus');
+            });
+
+            Route::prefix('reviews')->controller(ProviderReviewController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+            });
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin routes
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('admin')->middleware('role:admin')->group(function () {
+            Route::prefix('providers')->controller(AdminProviderController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+            });
+
+            Route::prefix('users')->controller(AdminUserController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+            });
+
+            Route::prefix('services')->controller(AdminServiceCatalogController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('vehicle-types')->controller(AdminVehicleTypeController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('statuses')->controller(AdminStatusController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('payment-method-types')->controller(AdminPaymentMethodTypeController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('audit-logs')->controller(AdminAuditController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+            });
+
+            Route::prefix('assistance-requests')->controller(AdminAssistanceController::class)->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+                Route::put('/{id}', 'update');
+                Route::patch('/{id}', 'update');
+            });
+
+            Route::prefix('finance')->group(function () {
+                Route::prefix('payments')->controller(AdminFinanceController::class)->group(function () {
+                    Route::get('/', 'payments');
+                    Route::get('/{id}', 'showPayment');
+                    Route::put('/{id}', 'updatePayment');
+                    Route::patch('/{id}', 'updatePayment');
+                });
+
+                Route::prefix('transactions')->controller(AdminFinanceController::class)->group(function () {
+                    Route::get('/', 'transactions');
+                    Route::get('/{id}', 'showTransaction');
+                });
+            });
+
+            Route::prefix('legal')->group(function () {
+                Route::prefix('consent-types')->controller(AdminLegalController::class)->group(function () {
+                    Route::get('/', 'consentTypes');
+                    Route::post('/', 'storeConsentType');
+                    Route::get('/{id}', 'showConsentType');
+                    Route::put('/{id}', 'updateConsentType');
+                    Route::patch('/{id}', 'updateConsentType');
+                    Route::delete('/{id}', 'deleteConsentType');
+                });
+
+                Route::prefix('documents')->controller(AdminLegalController::class)->group(function () {
+                    Route::get('/', 'documents');
+                    Route::post('/', 'storeDocument');
+                    Route::get('/{id}', 'showDocument');
+                    Route::put('/{id}', 'updateDocument');
+                    Route::patch('/{id}', 'updateDocument');
+                    Route::delete('/{id}', 'deleteDocument');
+                });
+            });
         });
     });
 });
