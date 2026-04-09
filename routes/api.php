@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\V1\Admin\AdminAssistanceController;
 use App\Http\Controllers\Api\V1\Admin\AdminAuditController;
 use App\Http\Controllers\Api\V1\Admin\AdminFinanceController;
-use App\Http\Controllers\Api\V1\Admin\AdminLegalController;
 use App\Http\Controllers\Api\V1\Admin\AdminPaymentMethodTypeController;
 use App\Http\Controllers\Api\V1\Admin\AdminProviderController;
 use App\Http\Controllers\Api\V1\Admin\AdminServiceCatalogController;
@@ -15,28 +14,19 @@ use App\Http\Controllers\Api\V1\Client\ClientAddressController;
 use App\Http\Controllers\Api\V1\Client\ClientAssistanceRequestController;
 use App\Http\Controllers\Api\V1\Client\ClientPaymentController;
 use App\Http\Controllers\Api\V1\Client\ClientPaymentMethodController;
-use App\Http\Controllers\Api\V1\Client\ClientServiceRequestController;
-use App\Http\Controllers\Api\V1\Client\ClientSubscriptionController;
 use App\Http\Controllers\Api\V1\Client\ClientVehicleController;
 use App\Http\Controllers\Api\V1\Common\NotificationController;
+use App\Http\Controllers\Api\V1\Common\PaymentMethodTypeController;
 use App\Http\Controllers\Api\V1\Common\ProfileController;
 use App\Http\Controllers\Api\V1\Common\ServiceController;
-use App\Http\Controllers\Api\V1\Common\SubscriptionPlanController;
-use App\Http\Controllers\Api\V1\Common\PaymentMethodTypeController;
 use App\Http\Controllers\Api\V1\Provider\ProviderAssistanceController;
 use App\Http\Controllers\Api\V1\Provider\ProviderDocumentController;
 use App\Http\Controllers\Api\V1\Provider\ProviderProfileController;
-use App\Http\Controllers\Api\V1\Provider\ProviderReviewController;
 use App\Http\Controllers\Api\V1\Provider\ProviderScheduleController;
 use App\Http\Controllers\Api\V1\Provider\ProviderServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Public routes
-    |--------------------------------------------------------------------------
-    */
     Route::prefix('auth')->controller(AuthController::class)->group(function () {
         Route::post('/register', 'register');
         Route::post('/login', 'login');
@@ -44,49 +34,24 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/services', [ServiceController::class, 'index']);
 
-    Route::prefix('subscription-plans')->controller(SubscriptionPlanController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::get('/{id}', 'show');
-    });
-
     Route::prefix('payment-method-types')->controller(PaymentMethodTypeController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('/{id}', 'show');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Protected routes
-    |--------------------------------------------------------------------------
-    */
     Route::middleware('auth:sanctum')->group(function () {
-        /*
-        |--------------------------------------------------------------------------
-        | Auth
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('auth')->controller(AuthController::class)->group(function () {
             Route::get('/me', 'me');
             Route::post('/logout', 'logout');
             Route::post('/logout-all', 'logoutAll');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Profile
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('me')->controller(ProfileController::class)->group(function () {
             Route::get('/', 'show');
             Route::put('/', 'update');
             Route::patch('/', 'update');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Notifications
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('notifications')->controller(NotificationController::class)->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
@@ -94,11 +59,6 @@ Route::prefix('v1')->group(function () {
             Route::patch('/read-all', 'markAllAsRead');
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Client routes
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('client')->middleware('role:client')->group(function () {
             Route::prefix('vehicles')->controller(ClientVehicleController::class)->group(function () {
                 Route::get('/', 'index');
@@ -142,28 +102,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}', 'show');
                 Route::get('/{id}/receipt', 'receipt');
             });
-
-            Route::prefix('service-requests')->controller(ClientServiceRequestController::class)->group(function () {
-                Route::get('/', 'index');
-                Route::post('/', 'store');
-                Route::get('/{id}', 'show');
-                Route::patch('/{id}/quote', 'quote');
-                Route::patch('/{id}/confirm', 'confirm');
-            });
-
-            Route::prefix('subscriptions')->controller(ClientSubscriptionController::class)->group(function () {
-                Route::get('/', 'index');
-                Route::post('/', 'store');
-                Route::get('/{id}', 'show');
-                Route::patch('/{id}/cancel', 'cancel');
-            });
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Provider routes
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('provider')->middleware('role:provider')->group(function () {
             Route::prefix('profile')->controller(ProviderProfileController::class)->group(function () {
                 Route::post('/', 'store');
@@ -202,18 +142,8 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/accept', 'accept');
                 Route::patch('/{id}/status', 'updateStatus');
             });
-
-            Route::prefix('reviews')->controller(ProviderReviewController::class)->group(function () {
-                Route::get('/', 'index');
-                Route::get('/{id}', 'show');
-            });
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Admin routes
-        |--------------------------------------------------------------------------
-        */
         Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::prefix('providers')->controller(AdminProviderController::class)->group(function () {
                 Route::get('/', 'index');
@@ -288,26 +218,6 @@ Route::prefix('v1')->group(function () {
                 Route::prefix('transactions')->controller(AdminFinanceController::class)->group(function () {
                     Route::get('/', 'transactions');
                     Route::get('/{id}', 'showTransaction');
-                });
-            });
-
-            Route::prefix('legal')->group(function () {
-                Route::prefix('consent-types')->controller(AdminLegalController::class)->group(function () {
-                    Route::get('/', 'consentTypes');
-                    Route::post('/', 'storeConsentType');
-                    Route::get('/{id}', 'showConsentType');
-                    Route::put('/{id}', 'updateConsentType');
-                    Route::patch('/{id}', 'updateConsentType');
-                    Route::delete('/{id}', 'deleteConsentType');
-                });
-
-                Route::prefix('documents')->controller(AdminLegalController::class)->group(function () {
-                    Route::get('/', 'documents');
-                    Route::post('/', 'storeDocument');
-                    Route::get('/{id}', 'showDocument');
-                    Route::put('/{id}', 'updateDocument');
-                    Route::patch('/{id}', 'updateDocument');
-                    Route::delete('/{id}', 'deleteDocument');
                 });
             });
         });

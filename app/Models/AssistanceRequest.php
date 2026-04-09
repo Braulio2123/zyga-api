@@ -21,6 +21,7 @@ class AssistanceRequest extends Model
         'lng',
         'pickup_address',
         'status',
+        'cancel_reason',
     ];
 
     protected $casts = [

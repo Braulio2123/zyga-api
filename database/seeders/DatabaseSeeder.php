@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             StatusDomainSeeder::class,
             StatusTypeSeeder::class,
+            PaymentMethodTypeSeeder::class,
             UserSeeder::class,
             DemoDataSeeder::class,
         ]);

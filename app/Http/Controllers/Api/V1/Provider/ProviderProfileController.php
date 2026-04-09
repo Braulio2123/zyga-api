@@ -7,18 +7,13 @@ use App\Models\Provider;
 use App\Models\StatusType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ProviderProfileController extends Controller
 {
-    protected function resolveProviderStatusId(?int $statusId): ?int
+    protected function pendingProviderStatusId(): ?int
     {
-        if (is_null($statusId)) {
-            return null;
-        }
-
         return StatusType::query()
-            ->where('id', $statusId)
+            ->where('code', 'pending')
             ->whereHas('domain', function ($query) {
                 $query->where('code', 'provider');
             })
@@ -28,7 +23,7 @@ class ProviderProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $provider = Provider::query()
-            ->with(['status', 'services', 'schedules'])
+            ->with(['status.domain', 'services', 'schedules', 'documents'])
             ->where('user_id', $request->user()->id)
             ->first();
 
@@ -40,7 +35,10 @@ class ProviderProfileController extends Controller
 
         return response()->json([
             'message' => 'Perfil de proveedor obtenido correctamente.',
-            'data' => $provider,
+            'data' => [
+                ...$provider->toArray(),
+                'can_operate' => (bool) ($provider->is_verified && optional($provider->status)->code === 'active'),
+            ],
         ], 200);
     }
 
@@ -53,40 +51,34 @@ class ProviderProfileController extends Controller
         if ($existingProvider) {
             return response()->json([
                 'message' => 'El usuario autenticado ya tiene un proveedor registrado.',
-                'data' => $existingProvider,
+                'data' => $existingProvider->load(['status', 'services', 'schedules', 'documents']),
             ], 422);
+        }
+
+        $pendingStatusId = $this->pendingProviderStatusId();
+
+        if (!$pendingStatusId) {
+            return response()->json([
+                'message' => 'No existe un estatus inicial de proveedor configurado (pending).',
+            ], 500);
         }
 
         $data = $request->validate([
             'display_name' => ['required', 'string', 'max:255'],
             'provider_kind' => ['nullable', 'string', 'max:100'],
-            'status_id' => ['required', 'integer', Rule::exists('status_types', 'id')],
         ]);
-
-        $statusId = $this->resolveProviderStatusId($data['status_id']);
-
-        if (!$statusId) {
-            return response()->json([
-                'message' => 'El status_id indicado no pertenece al dominio de proveedor.',
-                'errors' => [
-                    'status_id' => [
-                        'El status_id indicado no pertenece al dominio de proveedor.',
-                    ],
-                ],
-            ], 422);
-        }
 
         $provider = Provider::create([
             'user_id' => $request->user()->id,
             'display_name' => trim($data['display_name']),
             'provider_kind' => $data['provider_kind'] ?? null,
-            'status_id' => $statusId,
+            'status_id' => $pendingStatusId,
             'is_verified' => false,
         ]);
 
         return response()->json([
-            'message' => 'Proveedor registrado correctamente.',
-            'data' => $provider->load(['status', 'services', 'schedules']),
+            'message' => 'Proveedor registrado correctamente. Quedó en estado pendiente de validación administrativa.',
+            'data' => $provider->load(['status.domain', 'services', 'schedules', 'documents']),
         ], 201);
     }
 
@@ -119,13 +111,16 @@ class ProviderProfileController extends Controller
 
         return response()->json([
             'message' => 'Perfil de proveedor actualizado correctamente.',
-            'data' => $provider->load(['status', 'services', 'schedules']),
+            'data' => $provider->load(['status.domain', 'services', 'schedules', 'documents']),
         ], 200);
     }
 
     public function destroy(Request $request): JsonResponse
     {
         $provider = Provider::query()
+            ->withCount(['assistanceRequests as active_requests_count' => function ($query) {
+                $query->whereIn('status', ['created', 'assigned', 'in_progress']);
+            }])
             ->where('user_id', $request->user()->id)
             ->first();
 
@@ -133,6 +128,12 @@ class ProviderProfileController extends Controller
             return response()->json([
                 'message' => 'El usuario autenticado no tiene perfil de proveedor registrado.',
             ], 404);
+        }
+
+        if ($provider->active_requests_count > 0) {
+            return response()->json([
+                'message' => 'No se puede eliminar el perfil del proveedor mientras tenga solicitudes activas.',
+            ], 422);
         }
 
         $provider->delete();

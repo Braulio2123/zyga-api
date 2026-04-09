@@ -38,9 +38,11 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $result = DB::transaction(function () use ($data, $role) {
+        $normalizedEmail = strtolower(trim($data['email']));
+
+        $result = DB::transaction(function () use ($normalizedEmail, $data, $role) {
             $user = User::create([
-                'email' => $data['email'],
+                'email' => $normalizedEmail,
                 'password' => Hash::make($data['password']),
             ]);
 
@@ -83,8 +85,10 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $email = strtolower(trim($credentials['email']));
+
         $user = User::with('roles')
-            ->where('email', $credentials['email'])
+            ->where('email', $email)
             ->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
@@ -141,7 +145,6 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
-
         $currentToken = $user->currentAccessToken();
 
         if ($currentToken) {
@@ -162,7 +165,6 @@ class AuthController extends Controller
         $user = $request->user();
 
         $user->tokens()->delete();
-
         UserSession::where('user_id', $user->id)->delete();
 
         return response()->json([

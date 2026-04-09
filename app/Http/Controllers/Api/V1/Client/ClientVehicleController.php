@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Support\AssistanceRequestFlow;
 use Illuminate\Validation\Rule;
 
 class ClientVehicleController extends Controller
@@ -127,6 +128,9 @@ class ClientVehicleController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $vehicle = Vehicle::query()
+            ->withCount(['assistanceRequests as active_requests_count' => function ($query) {
+                $query->whereIn('status', AssistanceRequestFlow::activeStatuses());
+            }])
             ->where('id', $id)
             ->where('user_id', $request->user()->id)
             ->first();
@@ -135,6 +139,12 @@ class ClientVehicleController extends Controller
             return response()->json([
                 'message' => 'Vehículo no encontrado.',
             ], 404);
+        }
+
+        if ($vehicle->active_requests_count > 0) {
+            return response()->json([
+                'message' => 'No se puede eliminar un vehículo con solicitudes activas asociadas.',
+            ], 422);
         }
 
         $vehicle->delete();

@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Api\V1\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssistanceRequest;
-use App\Models\RequestEvent;
-use App\Models\RequestHistory;
+use App\Models\Service;
+use App\Services\AssistanceRequestLifecycleService;
+use App\Support\AssistanceRequestFlow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ClientAssistanceRequestController extends Controller
 {
+    public function __construct(
+        protected AssistanceRequestLifecycleService $lifecycle,
+    ) {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $assistanceRequests = AssistanceRequest::query()
@@ -36,7 +43,9 @@ class ClientAssistanceRequestController extends Controller
             'pickup_address' => ['required', 'string', 'max:255'],
         ]);
 
-        $vehicle = $request->user()->vehicles()
+        $user = $request->user();
+
+        $vehicle = $user->vehicles()
             ->where('id', $data['vehicle_id'])
             ->first();
 
@@ -46,37 +55,81 @@ class ClientAssistanceRequestController extends Controller
             ], 403);
         }
 
-        $assistanceRequest = AssistanceRequest::create([
-            'public_id' => 'REQ-' . strtoupper(Str::random(10)),
-            'user_id' => $request->user()->id,
-            'provider_id' => null,
-            'service_id' => $data['service_id'],
-            'vehicle_id' => $data['vehicle_id'],
-            'lat' => $data['lat'],
-            'lng' => $data['lng'],
-            'pickup_address' => trim($data['pickup_address']),
-            'status' => 'created',
-        ]);
+        $service = Service::query()
+            ->where('id', $data['service_id'])
+            ->where('is_active', true)
+            ->first();
 
-        RequestHistory::create([
-            'request_id' => $assistanceRequest->id,
-            'status' => 'created',
-        ]);
+        if (!$service) {
+            return response()->json([
+                'message' => 'El servicio seleccionado no existe o no está activo.',
+            ], 422);
+        }
 
-        RequestEvent::create([
-            'request_id' => $assistanceRequest->id,
-            'event_type' => 'created',
-            'event_data' => [
-                'message' => 'Solicitud creada por el cliente.',
-                'public_id' => $assistanceRequest->public_id,
-                'service_id' => $assistanceRequest->service_id,
-                'vehicle_id' => $assistanceRequest->vehicle_id,
-                'lat' => $assistanceRequest->lat,
-                'lng' => $assistanceRequest->lng,
-                'pickup_address' => $assistanceRequest->pickup_address,
-                'status' => $assistanceRequest->status,
-            ],
-        ]);
+        $activeRequest = AssistanceRequest::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', AssistanceRequestFlow::activeStatuses())
+            ->first();
+
+        if ($activeRequest) {
+            return response()->json([
+                'message' => 'Ya existe una solicitud activa para este usuario.',
+                'data' => [
+                    'active_request_id' => $activeRequest->id,
+                    'active_request_public_id' => $activeRequest->public_id,
+                    'active_request_status' => $activeRequest->status,
+                ],
+            ], 422);
+        }
+
+        $assistanceRequest = DB::transaction(function () use ($data, $service, $user) {
+            $assistanceRequest = AssistanceRequest::create([
+                'public_id' => Str::upper((string) Str::ulid()),
+                'user_id' => $user->id,
+                'provider_id' => null,
+                'service_id' => $service->id,
+                'vehicle_id' => $data['vehicle_id'],
+                'lat' => $data['lat'],
+                'lng' => $data['lng'],
+                'pickup_address' => trim($data['pickup_address']),
+                'status' => AssistanceRequestFlow::CREATED,
+            ]);
+
+            $this->lifecycle->createTimelineEntry(
+                $assistanceRequest,
+                AssistanceRequestFlow::CREATED,
+                'request_created',
+                [
+                    'message' => 'Solicitud creada por el cliente.',
+                    'public_id' => $assistanceRequest->public_id,
+                    'service_id' => $assistanceRequest->service_id,
+                    'vehicle_id' => $assistanceRequest->vehicle_id,
+                    'lat' => $assistanceRequest->lat,
+                    'lng' => $assistanceRequest->lng,
+                    'pickup_address' => $assistanceRequest->pickup_address,
+                    'status' => $assistanceRequest->status,
+                ]
+            );
+
+            $this->lifecycle->notifyUser(
+                $user->id,
+                'assistance_request',
+                'Tu solicitud de asistencia fue registrada y está disponible para asignación.'
+            );
+
+            $this->lifecycle->audit(
+                $user->id,
+                'client.assistance_request.created',
+                [
+                    'assistance_request_id' => $assistanceRequest->id,
+                    'public_id' => $assistanceRequest->public_id,
+                    'service_id' => $assistanceRequest->service_id,
+                    'vehicle_id' => $assistanceRequest->vehicle_id,
+                ]
+            );
+
+            return $assistanceRequest;
+        });
 
         $assistanceRequest->load(['service', 'vehicle', 'provider']);
 
@@ -119,7 +172,7 @@ class ClientAssistanceRequestController extends Controller
             ], 404);
         }
 
-        if (!in_array($assistanceRequest->status, ['created', 'assigned'], true)) {
+        if (!AssistanceRequestFlow::clientCanCancel($assistanceRequest->status)) {
             return response()->json([
                 'message' => 'La solicitud no puede cancelarse en su estado actual.',
                 'data' => [
@@ -128,22 +181,50 @@ class ClientAssistanceRequestController extends Controller
             ], 422);
         }
 
-        $assistanceRequest->status = 'cancelled';
-        $assistanceRequest->save();
-
-        RequestHistory::create([
-            'request_id' => $assistanceRequest->id,
-            'status' => 'cancelled',
+        $data = $request->validate([
+            'cancel_reason' => ['required', 'string', 'max:255'],
         ]);
 
-        RequestEvent::create([
-            'request_id' => $assistanceRequest->id,
-            'event_type' => 'cancelled',
-            'event_data' => [
-                'message' => 'Solicitud cancelada por el cliente.',
-                'status' => 'cancelled',
-            ],
-        ]);
+        DB::transaction(function () use ($assistanceRequest, $data, $request) {
+            $assistanceRequest->status = AssistanceRequestFlow::CANCELLED;
+            $assistanceRequest->cancel_reason = trim($data['cancel_reason']);
+            $assistanceRequest->save();
+
+            $this->lifecycle->createTimelineEntry(
+                $assistanceRequest,
+                AssistanceRequestFlow::CANCELLED,
+                'request_cancelled_by_client',
+                [
+                    'message' => 'Solicitud cancelada por el cliente.',
+                    'cancel_reason' => $assistanceRequest->cancel_reason,
+                    'status' => AssistanceRequestFlow::CANCELLED,
+                ]
+            );
+
+            $this->lifecycle->notifyUser(
+                $request->user()->id,
+                'assistance_request',
+                'Tu solicitud de asistencia fue cancelada correctamente.'
+            );
+
+            if (!is_null($assistanceRequest->provider?->user_id)) {
+                $this->lifecycle->notifyUser(
+                    $assistanceRequest->provider->user_id,
+                    'assistance_request',
+                    'Una solicitud asignada fue cancelada por el cliente.'
+                );
+            }
+
+            $this->lifecycle->audit(
+                $request->user()->id,
+                'client.assistance_request.cancelled',
+                [
+                    'assistance_request_id' => $assistanceRequest->id,
+                    'public_id' => $assistanceRequest->public_id,
+                    'cancel_reason' => $assistanceRequest->cancel_reason,
+                ]
+            );
+        });
 
         return response()->json([
             'message' => 'Solicitud de asistencia cancelada correctamente.',
@@ -151,6 +232,7 @@ class ClientAssistanceRequestController extends Controller
                 'id' => $assistanceRequest->id,
                 'public_id' => $assistanceRequest->public_id,
                 'status' => $assistanceRequest->status,
+                'cancel_reason' => $assistanceRequest->cancel_reason,
             ],
         ], 200);
     }
@@ -174,6 +256,8 @@ class ClientAssistanceRequestController extends Controller
                 'id' => $assistanceRequest->id,
                 'public_id' => $assistanceRequest->public_id,
                 'status' => $assistanceRequest->status,
+                'provider_id' => $assistanceRequest->provider_id,
+                'cancel_reason' => $assistanceRequest->cancel_reason,
             ],
         ], 200);
     }
@@ -191,15 +275,8 @@ class ClientAssistanceRequestController extends Controller
             ], 404);
         }
 
-        $history = RequestHistory::query()
-            ->where('request_id', $assistanceRequest->id)
-            ->orderBy('id')
-            ->get();
-
-        $events = RequestEvent::query()
-            ->where('request_id', $assistanceRequest->id)
-            ->orderBy('id')
-            ->get();
+        $history = $assistanceRequest->history()->orderBy('id')->get();
+        $events = $assistanceRequest->events()->orderBy('id')->get();
 
         return response()->json([
             'message' => 'Línea de tiempo obtenida correctamente.',
@@ -208,6 +285,8 @@ class ClientAssistanceRequestController extends Controller
                     'id' => $assistanceRequest->id,
                     'public_id' => $assistanceRequest->public_id,
                     'status' => $assistanceRequest->status,
+                    'provider_id' => $assistanceRequest->provider_id,
+                    'cancel_reason' => $assistanceRequest->cancel_reason,
                 ],
                 'history' => $history,
                 'events' => $events,
