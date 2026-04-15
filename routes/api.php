@@ -24,6 +24,8 @@ use App\Http\Controllers\Api\V1\Provider\ProviderDocumentController;
 use App\Http\Controllers\Api\V1\Provider\ProviderProfileController;
 use App\Http\Controllers\Api\V1\Provider\ProviderScheduleController;
 use App\Http\Controllers\Api\V1\Provider\ProviderServiceController;
+use App\Http\Controllers\Api\V1\Provider\ProviderTrackingController;
+use App\Http\Controllers\Api\V1\Client\ClientTrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -96,6 +98,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}/timeline', 'timeline');
             });
 
+            Route::get('/assistance-requests/{id}/tracking', [ClientTrackingController::class, 'show']);
+
             Route::prefix('payments')->controller(ClientPaymentController::class)->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
@@ -133,6 +137,10 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', 'store');
                 Route::get('/{id}', 'show');
                 Route::delete('/{id}', 'destroy');
+            });
+
+            Route::prefix('tracking')->controller(ProviderTrackingController::class)->group(function () {
+                Route::post('/', 'store');
             });
 
             Route::prefix('assistance-requests')->controller(ProviderAssistanceController::class)->group(function () {

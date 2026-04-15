@@ -64,4 +64,9 @@ class Provider extends Model
     {
         return $this->hasMany(ProviderReview::class, 'provider_id');
     }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(ProviderLocation::class, 'provider_id');
+    }
 }

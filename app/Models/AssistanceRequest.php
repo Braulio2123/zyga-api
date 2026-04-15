@@ -67,4 +67,15 @@ class AssistanceRequest extends Model
     {
         return $this->hasOne(Payment::class, 'assistance_request_id');
     }
+
+    public function providerLocations(): HasMany
+    {
+        return $this->hasMany(ProviderLocation::class, 'assistance_request_id');
+    }
+
+    public function latestProviderLocation(): HasOne
+    {
+        return $this->hasOne(ProviderLocation::class, 'assistance_request_id')
+            ->latestOfMany('recorded_at');
+    }
 }
