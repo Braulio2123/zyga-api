@@ -19,7 +19,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'max:255'],
-            'role' => ['nullable', 'string', 'in:client,provider'],
+            'role' => ['nullable', 'string', 'in:admin,client,provider'],
         ]);
 
         $roleCode = $data['role'] ?? 'client';
