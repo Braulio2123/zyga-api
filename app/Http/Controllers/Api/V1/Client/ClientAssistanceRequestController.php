@@ -41,6 +41,7 @@ class ClientAssistanceRequestController extends Controller
             'lat' => ['required', 'numeric', 'between:-90,90'],
             'lng' => ['required', 'numeric', 'between:-180,180'],
             'pickup_address' => ['required', 'string', 'max:255'],
+            'pickup_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
@@ -92,6 +93,9 @@ class ClientAssistanceRequestController extends Controller
                 'lat' => $data['lat'],
                 'lng' => $data['lng'],
                 'pickup_address' => trim($data['pickup_address']),
+                'pickup_reference' => filled($data['pickup_reference'] ?? null)
+                    ? trim($data['pickup_reference'])
+                    : null,
                 'status' => AssistanceRequestFlow::CREATED,
             ]);
 
@@ -107,6 +111,7 @@ class ClientAssistanceRequestController extends Controller
                     'lat' => $assistanceRequest->lat,
                     'lng' => $assistanceRequest->lng,
                     'pickup_address' => $assistanceRequest->pickup_address,
+                    'pickup_reference' => $assistanceRequest->pickup_reference,
                     'status' => $assistanceRequest->status,
                 ]
             );
@@ -125,6 +130,7 @@ class ClientAssistanceRequestController extends Controller
                     'public_id' => $assistanceRequest->public_id,
                     'service_id' => $assistanceRequest->service_id,
                     'vehicle_id' => $assistanceRequest->vehicle_id,
+                    'pickup_reference' => $assistanceRequest->pickup_reference,
                 ]
             );
 
@@ -258,6 +264,8 @@ class ClientAssistanceRequestController extends Controller
                 'status' => $assistanceRequest->status,
                 'provider_id' => $assistanceRequest->provider_id,
                 'cancel_reason' => $assistanceRequest->cancel_reason,
+                'pickup_address' => $assistanceRequest->pickup_address,
+                'pickup_reference' => $assistanceRequest->pickup_reference,
             ],
         ], 200);
     }
@@ -287,6 +295,8 @@ class ClientAssistanceRequestController extends Controller
                     'status' => $assistanceRequest->status,
                     'provider_id' => $assistanceRequest->provider_id,
                     'cancel_reason' => $assistanceRequest->cancel_reason,
+                    'pickup_address' => $assistanceRequest->pickup_address,
+                    'pickup_reference' => $assistanceRequest->pickup_reference,
                 ],
                 'history' => $history,
                 'events' => $events,

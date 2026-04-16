@@ -22,7 +22,14 @@ class AdminAssistanceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = AssistanceRequest::query()
-            ->with(['user', 'provider', 'service', 'vehicle'])
+            ->with([
+                'user',
+                'provider',
+                'provider.user',
+                'service',
+                'vehicle',
+                'latestProviderLocation',
+            ])
             ->orderByDesc('id');
 
         if ($request->filled('status')) {
@@ -64,7 +71,17 @@ class AdminAssistanceController extends Controller
     public function show(int $id): JsonResponse
     {
         $assistanceRequest = AssistanceRequest::query()
-            ->with(['user', 'provider', 'service', 'vehicle', 'history', 'events', 'payment'])
+            ->with([
+                'user',
+                'provider',
+                'provider.user',
+                'service',
+                'vehicle',
+                'history',
+                'events',
+                'payment',
+                'latestProviderLocation',
+            ])
             ->find($id);
 
         if (!$assistanceRequest) {
@@ -226,9 +243,21 @@ class AdminAssistanceController extends Controller
             );
         });
 
+        $assistanceRequest->load([
+            'user',
+            'provider',
+            'provider.user',
+            'service',
+            'vehicle',
+            'history',
+            'events',
+            'payment',
+            'latestProviderLocation',
+        ]);
+
         return response()->json([
             'message' => 'Solicitud de asistencia actualizada correctamente.',
-            'data' => $assistanceRequest->fresh(['user', 'provider', 'service', 'vehicle', 'history', 'events', 'payment']),
+            'data' => $assistanceRequest,
         ], 200);
     }
 }

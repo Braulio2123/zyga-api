@@ -40,6 +40,7 @@ class ClientTrackingController extends Controller
                     'status' => $assistanceRequest->status,
                     'cancel_reason' => $assistanceRequest->cancel_reason,
                     'pickup_address' => $assistanceRequest->pickup_address,
+                    'pickup_reference' => $assistanceRequest->pickup_reference,
                     'lat' => $assistanceRequest->lat,
                     'lng' => $assistanceRequest->lng,
                     'service' => $assistanceRequest->service ? [

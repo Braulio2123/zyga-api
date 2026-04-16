@@ -20,6 +20,7 @@ class AssistanceRequest extends Model
         'lat',
         'lng',
         'pickup_address',
+        'pickup_reference',
         'status',
         'cancel_reason',
     ];
