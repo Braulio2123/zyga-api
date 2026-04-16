@@ -21,6 +21,11 @@ class AssistanceRequest extends Model
         'lng',
         'pickup_address',
         'pickup_reference',
+        'quoted_amount',
+        'final_amount',
+        'payment_status',
+        'payment_method',
+        'pricing_breakdown',
         'status',
         'cancel_reason',
     ];
@@ -32,6 +37,9 @@ class AssistanceRequest extends Model
         'vehicle_id' => 'integer',
         'lat' => 'decimal:8',
         'lng' => 'decimal:8',
+        'quoted_amount' => 'decimal:2',
+        'final_amount' => 'decimal:2',
+        'pricing_breakdown' => 'array',
     ];
 
     public function user(): BelongsTo

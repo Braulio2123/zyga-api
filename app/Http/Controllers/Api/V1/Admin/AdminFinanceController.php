@@ -15,7 +15,7 @@ class AdminFinanceController extends Controller
     public function payments(Request $request): JsonResponse
     {
         $query = Payment::query()
-            ->with(['assistanceRequest', 'transactions'])
+            ->with(['assistanceRequest', 'transactions', 'validator'])
             ->orderByDesc('id');
 
         if ($request->filled('assistance_request_id')) {
@@ -53,7 +53,7 @@ class AdminFinanceController extends Controller
     public function showPayment(int $id): JsonResponse
     {
         $payment = Payment::query()
-            ->with(['assistanceRequest', 'transactions'])
+            ->with(['assistanceRequest', 'transactions', 'validator'])
             ->find($id);
 
         if (!$payment) {
@@ -70,7 +70,9 @@ class AdminFinanceController extends Controller
 
     public function updatePayment(Request $request, int $id): JsonResponse
     {
-        $payment = Payment::query()->find($id);
+        $payment = Payment::query()
+            ->with('assistanceRequest')
+            ->find($id);
 
         if (!$payment) {
             return response()->json([
@@ -79,15 +81,20 @@ class AdminFinanceController extends Controller
         }
 
         $original = [
-            'amount' => $payment->amount,
             'payment_method' => $payment->payment_method,
+            'reference' => $payment->reference,
+            'notes' => $payment->notes,
             'transaction_id' => $payment->transaction_id,
             'status' => $payment->status,
+            'validated_by' => $payment->validated_by,
+            'validated_at' => $payment->validated_at,
+            'request_payment_status' => $payment->assistanceRequest?->payment_status,
         ];
 
         $data = $request->validate([
-            'amount' => ['sometimes', 'numeric', 'min:0'],
-            'payment_method' => ['sometimes', 'string', 'max:255'],
+            'payment_method' => ['sometimes', 'string', 'max:50'],
+            'reference' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'transaction_id' => [
                 'sometimes',
                 'string',
@@ -97,7 +104,7 @@ class AdminFinanceController extends Controller
             'status' => [
                 'sometimes',
                 'string',
-                Rule::in(['pending', 'completed', 'failed']),
+                Rule::in(['pending', 'pending_validation', 'completed', 'failed', 'rejected']),
             ],
         ]);
 
@@ -109,34 +116,66 @@ class AdminFinanceController extends Controller
 
         $changedFields = [];
 
-        if (array_key_exists('amount', $data) && (float) $data['amount'] !== (float) $payment->amount) {
-            $payment->amount = $data['amount'];
-            $changedFields[] = 'amount';
-        }
-
         if (array_key_exists('payment_method', $data) && $data['payment_method'] !== $payment->payment_method) {
-            $payment->payment_method = trim($data['payment_method']);
+            $payment->payment_method = trim((string) $data['payment_method']);
             $changedFields[] = 'payment_method';
         }
 
+        if (array_key_exists('reference', $data) && $data['reference'] !== $payment->reference) {
+            $payment->reference = filled($data['reference']) ? trim((string) $data['reference']) : null;
+            $changedFields[] = 'reference';
+        }
+
+        if (array_key_exists('notes', $data) && $data['notes'] !== $payment->notes) {
+            $payment->notes = filled($data['notes']) ? trim((string) $data['notes']) : null;
+            $changedFields[] = 'notes';
+        }
+
         if (array_key_exists('transaction_id', $data) && $data['transaction_id'] !== $payment->transaction_id) {
-            $payment->transaction_id = trim($data['transaction_id']);
+            $payment->transaction_id = trim((string) $data['transaction_id']);
             $changedFields[] = 'transaction_id';
         }
 
         if (array_key_exists('status', $data) && $data['status'] !== $payment->status) {
             $payment->status = $data['status'];
             $changedFields[] = 'status';
+
+            if (in_array($payment->status, ['completed', 'rejected'], true)) {
+                $payment->validated_by = $request->user()->id;
+                $payment->validated_at = now();
+            } else {
+                $payment->validated_by = null;
+                $payment->validated_at = null;
+            }
         }
 
         if (empty($changedFields)) {
             return response()->json([
                 'message' => 'No se detectaron cambios para actualizar.',
-                'data' => $payment->load(['assistanceRequest', 'transactions']),
+                'data' => $payment->load(['assistanceRequest', 'transactions', 'validator']),
             ], 200);
         }
 
         $payment->save();
+
+        if ($payment->assistanceRequest) {
+            if (in_array('payment_method', $changedFields, true)) {
+                $payment->assistanceRequest->payment_method = $payment->payment_method;
+            }
+
+            if (in_array('status', $changedFields, true)) {
+                $payment->assistanceRequest->payment_status = match ($payment->status) {
+                    'completed' => 'paid',
+                    'pending_validation' => 'pending_validation',
+                    'pending' => 'pending',
+                    'failed' => 'failed',
+                    'rejected' => 'rejected',
+                    default => $payment->assistanceRequest->payment_status,
+                };
+            }
+
+            $payment->assistanceRequest->save();
+        }
 
         AuditLog::create([
             'user_id' => $request->user()->id,
@@ -147,17 +186,21 @@ class AdminFinanceController extends Controller
                 'changed_fields' => $changedFields,
                 'before' => $original,
                 'after' => [
-                    'amount' => $payment->amount,
                     'payment_method' => $payment->payment_method,
+                    'reference' => $payment->reference,
+                    'notes' => $payment->notes,
                     'transaction_id' => $payment->transaction_id,
                     'status' => $payment->status,
+                    'validated_by' => $payment->validated_by,
+                    'validated_at' => $payment->validated_at,
+                    'request_payment_status' => $payment->assistanceRequest?->payment_status,
                 ],
             ], JSON_UNESCAPED_UNICODE),
         ]);
 
         return response()->json([
             'message' => 'Pago actualizado correctamente.',
-            'data' => $payment->load(['assistanceRequest', 'transactions']),
+            'data' => $payment->load(['assistanceRequest', 'transactions', 'validator']),
         ], 200);
     }
 

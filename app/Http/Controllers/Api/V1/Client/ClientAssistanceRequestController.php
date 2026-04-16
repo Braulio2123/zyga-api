@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AssistanceRequest;
 use App\Models\Service;
 use App\Services\AssistanceRequestLifecycleService;
+use App\Services\SimplePricingService;
 use App\Support\AssistanceRequestFlow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class ClientAssistanceRequestController extends Controller
 {
     public function __construct(
         protected AssistanceRequestLifecycleService $lifecycle,
+        protected SimplePricingService $pricingService,
     ) {
     }
 
@@ -33,20 +35,17 @@ class ClientAssistanceRequestController extends Controller
         ], 200);
     }
 
-    public function store(Request $request): JsonResponse
+    public function quote(Request $request): JsonResponse
     {
         $data = $request->validate([
             'service_id' => ['required', 'integer', 'exists:services,id'],
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
-            'lat' => ['required', 'numeric', 'between:-90,90'],
-            'lng' => ['required', 'numeric', 'between:-180,180'],
-            'pickup_address' => ['required', 'string', 'max:255'],
-            'pickup_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
 
         $vehicle = $user->vehicles()
+            ->with('vehicleType')
             ->where('id', $data['vehicle_id'])
             ->first();
 
@@ -67,6 +66,63 @@ class ClientAssistanceRequestController extends Controller
             ], 422);
         }
 
+        $quote = $this->pricingService->quote($service, $vehicle);
+
+        if (!$quote) {
+            return response()->json([
+                'message' => 'No existe una tarifa activa para la combinación de servicio y tipo de vehículo seleccionada.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Cotización obtenida correctamente.',
+            'data' => $quote,
+        ], 200);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+            'pickup_address' => ['required', 'string', 'max:255'],
+            'pickup_reference' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        $vehicle = $user->vehicles()
+            ->with('vehicleType')
+            ->where('id', $data['vehicle_id'])
+            ->first();
+
+        if (!$vehicle) {
+            return response()->json([
+                'message' => 'El vehículo seleccionado no pertenece al usuario autenticado.',
+            ], 403);
+        }
+
+        $service = Service::query()
+            ->where('id', $data['service_id'])
+            ->where('is_active', true)
+            ->first();
+
+        if (!$service) {
+            return response()->json([
+                'message' => 'El servicio seleccionado no existe o no está activo.',
+            ], 422);
+        }
+
+        $quote = $this->pricingService->quote($service, $vehicle);
+
+        if (!$quote) {
+            return response()->json([
+                'message' => 'No existe una tarifa activa para la combinación de servicio y tipo de vehículo seleccionada.',
+            ], 422);
+        }
+
         $activeRequest = AssistanceRequest::query()
             ->where('user_id', $user->id)
             ->whereIn('status', AssistanceRequestFlow::activeStatuses())
@@ -83,7 +139,7 @@ class ClientAssistanceRequestController extends Controller
             ], 422);
         }
 
-        $assistanceRequest = DB::transaction(function () use ($data, $service, $user) {
+        $assistanceRequest = DB::transaction(function () use ($data, $service, $user, $quote) {
             $assistanceRequest = AssistanceRequest::create([
                 'public_id' => Str::upper((string) Str::ulid()),
                 'user_id' => $user->id,
@@ -96,6 +152,11 @@ class ClientAssistanceRequestController extends Controller
                 'pickup_reference' => filled($data['pickup_reference'] ?? null)
                     ? trim($data['pickup_reference'])
                     : null,
+                'quoted_amount' => $quote['quoted_amount'],
+                'final_amount' => $quote['quoted_amount'],
+                'payment_status' => 'pending',
+                'payment_method' => null,
+                'pricing_breakdown' => $quote,
                 'status' => AssistanceRequestFlow::CREATED,
             ]);
 
@@ -112,6 +173,10 @@ class ClientAssistanceRequestController extends Controller
                     'lng' => $assistanceRequest->lng,
                     'pickup_address' => $assistanceRequest->pickup_address,
                     'pickup_reference' => $assistanceRequest->pickup_reference,
+                    'quoted_amount' => $assistanceRequest->quoted_amount,
+                    'final_amount' => $assistanceRequest->final_amount,
+                    'payment_status' => $assistanceRequest->payment_status,
+                    'pricing_breakdown' => $assistanceRequest->pricing_breakdown,
                     'status' => $assistanceRequest->status,
                 ]
             );
@@ -131,6 +196,9 @@ class ClientAssistanceRequestController extends Controller
                     'service_id' => $assistanceRequest->service_id,
                     'vehicle_id' => $assistanceRequest->vehicle_id,
                     'pickup_reference' => $assistanceRequest->pickup_reference,
+                    'quoted_amount' => $assistanceRequest->quoted_amount,
+                    'final_amount' => $assistanceRequest->final_amount,
+                    'payment_status' => $assistanceRequest->payment_status,
                 ]
             );
 
@@ -266,6 +334,10 @@ class ClientAssistanceRequestController extends Controller
                 'cancel_reason' => $assistanceRequest->cancel_reason,
                 'pickup_address' => $assistanceRequest->pickup_address,
                 'pickup_reference' => $assistanceRequest->pickup_reference,
+                'quoted_amount' => $assistanceRequest->quoted_amount,
+                'final_amount' => $assistanceRequest->final_amount,
+                'payment_status' => $assistanceRequest->payment_status,
+                'payment_method' => $assistanceRequest->payment_method,
             ],
         ], 200);
     }
@@ -297,6 +369,11 @@ class ClientAssistanceRequestController extends Controller
                     'cancel_reason' => $assistanceRequest->cancel_reason,
                     'pickup_address' => $assistanceRequest->pickup_address,
                     'pickup_reference' => $assistanceRequest->pickup_reference,
+                    'quoted_amount' => $assistanceRequest->quoted_amount,
+                    'final_amount' => $assistanceRequest->final_amount,
+                    'payment_status' => $assistanceRequest->payment_status,
+                    'payment_method' => $assistanceRequest->payment_method,
+                    'pricing_breakdown' => $assistanceRequest->pricing_breakdown,
                 ],
                 'history' => $history,
                 'events' => $events,

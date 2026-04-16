@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\Client\ClientAddressController;
 use App\Http\Controllers\Api\V1\Client\ClientAssistanceRequestController;
 use App\Http\Controllers\Api\V1\Client\ClientPaymentController;
 use App\Http\Controllers\Api\V1\Client\ClientPaymentMethodController;
+use App\Http\Controllers\Api\V1\Client\ClientTrackingController;
 use App\Http\Controllers\Api\V1\Client\ClientVehicleController;
 use App\Http\Controllers\Api\V1\Common\NotificationController;
 use App\Http\Controllers\Api\V1\Common\PaymentMethodTypeController;
@@ -25,7 +26,6 @@ use App\Http\Controllers\Api\V1\Provider\ProviderProfileController;
 use App\Http\Controllers\Api\V1\Provider\ProviderScheduleController;
 use App\Http\Controllers\Api\V1\Provider\ProviderServiceController;
 use App\Http\Controllers\Api\V1\Provider\ProviderTrackingController;
-use App\Http\Controllers\Api\V1\Client\ClientTrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -91,6 +91,7 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix('assistance-requests')->controller(ClientAssistanceRequestController::class)->group(function () {
                 Route::get('/', 'index');
+                Route::post('/quote', 'quote');
                 Route::post('/', 'store');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}/cancel', 'cancel');

@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RoleTypeSeeder::class,
             VehicleTypeSeeder::class,
             ServiceSeeder::class,
+            ServiceVehicleRateSeeder::class,
             StatusDomainSeeder::class,
             StatusTypeSeeder::class,
             PaymentMethodTypeSeeder::class,

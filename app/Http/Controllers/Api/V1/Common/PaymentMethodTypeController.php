@@ -18,6 +18,8 @@ class PaymentMethodTypeController extends Controller
                 'is_active',
                 filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN)
             );
+        } else {
+            $query->where('is_active', true);
         }
 
         if ($request->filled('code')) {

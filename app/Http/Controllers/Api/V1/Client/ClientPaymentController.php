@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ClientPaymentController extends Controller
 {
@@ -21,13 +22,26 @@ class ClientPaymentController extends Controller
     ) {
     }
 
+    protected function resolvePaymentMethodType(string $code): ?PaymentMethodType
+    {
+        return PaymentMethodType::query()
+            ->where('code', strtolower(trim($code)))
+            ->where('is_active', true)
+            ->first();
+    }
+
+    protected function blockedStatuses(): array
+    {
+        return ['pending', 'pending_validation', 'completed'];
+    }
+
     public function index(Request $request): JsonResponse
     {
         $payments = Payment::query()
             ->whereHas('assistanceRequest', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
             })
-            ->with(['assistanceRequest.service', 'assistanceRequest.vehicle'])
+            ->with(['assistanceRequest.service', 'assistanceRequest.vehicle', 'transactions'])
             ->orderByDesc('id')
             ->get();
 
@@ -41,12 +55,13 @@ class ClientPaymentController extends Controller
     {
         $data = $request->validate([
             'assistance_request_id' => ['required', 'integer', 'exists:assistance_requests,id'],
-            'payment_method' => ['required', 'string', 'max:50'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'payment_method' => ['required', 'string', Rule::in(['cash', 'transfer'])],
+            'reference' => ['nullable', 'string', 'max:120', 'required_if:payment_method,transfer'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $assistanceRequest = AssistanceRequest::query()
-            ->with(['payment', 'provider'])
+            ->with(['payment', 'provider', 'service', 'vehicle'])
             ->where('id', $data['assistance_request_id'])
             ->where('user_id', $request->user()->id)
             ->first();
@@ -66,10 +81,8 @@ class ClientPaymentController extends Controller
             ], 422);
         }
 
-        $paymentMethodType = PaymentMethodType::query()
-            ->where('code', strtolower(trim($data['payment_method'])))
-            ->where('is_active', true)
-            ->first();
+        $paymentMethodCode = strtolower(trim((string) $data['payment_method']));
+        $paymentMethodType = $this->resolvePaymentMethodType($paymentMethodCode);
 
         if (!$paymentMethodType) {
             return response()->json([
@@ -77,64 +90,111 @@ class ClientPaymentController extends Controller
             ], 422);
         }
 
-        if ($assistanceRequest->payment && $assistanceRequest->payment->status === 'completed') {
+        if (
+            $assistanceRequest->payment &&
+            in_array(strtolower((string) $assistanceRequest->payment->status), $this->blockedStatuses(), true)
+        ) {
             return response()->json([
-                'message' => 'La solicitud ya tiene un pago completado.',
-                'data' => $assistanceRequest->payment,
+                'message' => 'La solicitud ya tiene un pago registrado o en proceso de validación.',
+                'data' => $assistanceRequest->payment->load(['transactions']),
             ], 422);
         }
 
-        $payment = DB::transaction(function () use ($assistanceRequest, $paymentMethodType, $data, $request) {
+        $amount = (float) ($assistanceRequest->final_amount ?? $assistanceRequest->quoted_amount ?? 0);
+
+        if ($amount <= 0) {
+            return response()->json([
+                'message' => 'La solicitud no tiene un monto final válido para registrar el pago.',
+            ], 422);
+        }
+
+        $isTransfer = $paymentMethodCode === 'transfer';
+        $paymentStatus = $isTransfer ? 'pending_validation' : 'completed';
+        $requestPaymentStatus = $isTransfer ? 'pending_validation' : 'paid';
+        $reference = filled($data['reference'] ?? null) ? trim((string) $data['reference']) : null;
+        $notes = filled($data['notes'] ?? null) ? trim((string) $data['notes']) : null;
+
+        $payment = DB::transaction(function () use (
+            $assistanceRequest,
+            $request,
+            $amount,
+            $paymentMethodCode,
+            $paymentStatus,
+            $requestPaymentStatus,
+            $reference,
+            $notes,
+            $isTransfer
+        ) {
             $payment = $assistanceRequest->payment ?? new Payment();
             $payment->assistance_request_id = $assistanceRequest->id;
-            $payment->amount = $data['amount'];
-            $payment->payment_method = $paymentMethodType->code;
-            $payment->transaction_id = 'PAY-' . Str::upper(Str::random(12));
-            $payment->status = 'completed';
+            $payment->amount = $amount;
+            $payment->payment_method = $paymentMethodCode;
+            $payment->reference = $reference;
+            $payment->notes = $notes;
+            $payment->transaction_id = ($isTransfer ? 'TRF-' : 'CASH-') . Str::upper(Str::random(12));
+            $payment->status = $paymentStatus;
+            $payment->validated_by = null;
+            $payment->validated_at = $isTransfer ? null : now();
             $payment->save();
 
             PaymentTransaction::create([
                 'payment_id' => $payment->id,
-                'gateway' => 'sandbox',
+                'gateway' => $isTransfer ? 'manual_transfer' : 'manual_cash',
                 'gateway_event_id' => 'EVT-' . Str::upper(Str::random(16)),
             ]);
+
+            $assistanceRequest->payment_status = $requestPaymentStatus;
+            $assistanceRequest->payment_method = $paymentMethodCode;
+            $assistanceRequest->final_amount = $amount;
+            $assistanceRequest->save();
 
             $this->lifecycle->createTimelineEntry(
                 $assistanceRequest,
                 $assistanceRequest->status,
-                'payment_registered',
+                $isTransfer ? 'payment_submitted_for_validation' : 'payment_registered',
                 [
                     'payment_id' => $payment->id,
                     'amount' => $payment->amount,
                     'payment_method' => $payment->payment_method,
+                    'reference' => $payment->reference,
+                    'notes' => $payment->notes,
                     'transaction_id' => $payment->transaction_id,
                     'status' => $payment->status,
+                    'request_payment_status' => $assistanceRequest->payment_status,
                 ]
             );
 
             $this->lifecycle->notifyUser(
                 $request->user()->id,
                 'payment',
-                'Tu pago fue registrado correctamente.'
+                $isTransfer
+                    ? 'Tu pago por transferencia fue enviado a validación.'
+                    : 'Tu pago fue registrado correctamente.'
             );
 
             if (!is_null($assistanceRequest->provider?->user_id)) {
                 $this->lifecycle->notifyUser(
                     $assistanceRequest->provider->user_id,
                     'payment',
-                    'Se registró el pago de un servicio que atendiste.'
+                    $isTransfer
+                        ? 'Se registró un pago por transferencia pendiente de validación en un servicio que atendiste.'
+                        : 'Se registró el pago de un servicio que atendiste.'
                 );
             }
 
             $this->lifecycle->audit(
                 $request->user()->id,
-                'client.payment.completed',
+                $isTransfer ? 'client.payment.pending_validation' : 'client.payment.completed',
                 [
                     'payment_id' => $payment->id,
                     'assistance_request_id' => $assistanceRequest->id,
                     'amount' => $payment->amount,
                     'payment_method' => $payment->payment_method,
+                    'reference' => $payment->reference,
+                    'notes' => $payment->notes,
                     'transaction_id' => $payment->transaction_id,
+                    'payment_status' => $payment->status,
+                    'request_payment_status' => $assistanceRequest->payment_status,
                 ]
             );
 
@@ -142,7 +202,9 @@ class ClientPaymentController extends Controller
         });
 
         return response()->json([
-            'message' => 'Pago registrado correctamente.',
+            'message' => $isTransfer
+                ? 'Pago enviado a validación correctamente.'
+                : 'Pago registrado correctamente.',
             'data' => $payment->load(['assistanceRequest.service', 'assistanceRequest.vehicle', 'transactions']),
         ], 201);
     }
@@ -191,8 +253,11 @@ class ClientPaymentController extends Controller
                 'payment_id' => $payment->id,
                 'amount' => $payment->amount,
                 'payment_method' => $payment->payment_method,
+                'reference' => $payment->reference,
+                'notes' => $payment->notes,
                 'transaction_id' => $payment->transaction_id,
                 'status' => $payment->status,
+                'validated_at' => $payment->validated_at,
                 'assistance_request' => [
                     'id' => $payment->assistanceRequest?->id,
                     'public_id' => $payment->assistanceRequest?->public_id,
@@ -200,6 +265,9 @@ class ClientPaymentController extends Controller
                     'vehicle' => $payment->assistanceRequest?->vehicle
                         ? trim(($payment->assistanceRequest->vehicle->brand ?? '') . ' ' . ($payment->assistanceRequest->vehicle->model ?? ''))
                         : null,
+                    'quoted_amount' => $payment->assistanceRequest?->quoted_amount,
+                    'final_amount' => $payment->assistanceRequest?->final_amount,
+                    'payment_status' => $payment->assistanceRequest?->payment_status,
                 ],
                 'issued_at' => $payment->created_at,
             ],

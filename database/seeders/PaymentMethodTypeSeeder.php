@@ -10,10 +10,10 @@ class PaymentMethodTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            ['code' => 'card', 'name' => 'Tarjeta', 'is_active' => true],
             ['code' => 'cash', 'name' => 'Efectivo', 'is_active' => true],
             ['code' => 'transfer', 'name' => 'Transferencia', 'is_active' => true],
-            ['code' => 'digital', 'name' => 'Digital', 'is_active' => true],
+            ['code' => 'card', 'name' => 'Tarjeta', 'is_active' => false],
+            ['code' => 'digital', 'name' => 'Digital', 'is_active' => false],
         ];
 
         foreach ($types as $type) {
