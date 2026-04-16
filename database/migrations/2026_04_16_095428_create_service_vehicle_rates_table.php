@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('service_vehicle_rates', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('service_id');
-            $table->unsignedBigInteger('vehicle_type_id');
+            $table->unsignedSmallInteger('vehicle_type_id');
             $table->decimal('base_amount', 10, 2);
             $table->decimal('night_surcharge', 10, 2)->default(0);
             $table->decimal('weekend_surcharge', 10, 2)->default(0);
