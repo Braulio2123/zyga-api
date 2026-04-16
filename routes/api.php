@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminServiceCatalogController;
 use App\Http\Controllers\Api\V1\Admin\AdminStatusController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\Admin\AdminVehicleTypeController;
+use App\Http\Controllers\Api\V1\Admin\Exportaciones\AdminExportController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Client\ClientAddressController;
 use App\Http\Controllers\Api\V1\Client\ClientAssistanceRequestController;
@@ -228,6 +229,20 @@ Route::prefix('v1')->group(function () {
                     Route::get('/', 'transactions');
                     Route::get('/{id}', 'showTransaction');
                 });
+            });
+
+            Route::prefix('exportaciones')->controller(AdminExportController::class)->group(function () {
+                Route::get('/users/excel', 'usersExcel');
+                Route::get('/users/pdf', 'usersPdf');
+
+                Route::get('/providers/excel', 'providersExcel');
+                Route::get('/providers/pdf', 'providersPdf');
+
+                Route::get('/assistance-requests/excel', 'assistanceRequestsExcel');
+                Route::get('/assistance-requests/pdf', 'assistanceRequestsPdf');
+
+                Route::get('/payments/excel', 'paymentsExcel');
+                Route::get('/payments/pdf', 'paymentsPdf');
             });
         });
     });
